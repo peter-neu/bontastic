@@ -10,13 +10,19 @@
 
 // Change this to match your Meshtastic device's BLE name,
 // or leave as "Meshtastic" to connect to the first matching device.
-static const char *MESHTASTIC_DEVICE_NAME = "Meshtastic";
+static const char *MESHTASTIC_DEVICE_NAME = "🚐_cdb5";
+static const uint32_t BLE_PASSKEY = 123456; // Fixed PIN for connection
 
-// These UUIDs are taken from Meshtastic BLE API (same as used in python client).
-// Check the python repo / docs if they change in the future.
-static const char *MESHTASTIC_SERVICE_UUID = "2ba6f1d0-1d9d-11e9-ab14-d663bd873d93";
-static const char *MESHTASTIC_CHAR_TO_RADIO_UUID = "2ba6f1d1-1d9d-11e9-ab14-d663bd873d93";   // write
-static const char *MESHTASTIC_CHAR_FROM_RADIO_UUID = "2ba6f1d2-1d9d-11e9-ab14-d663bd873d93"; // notify
+// These UUIDs are taken from the current Meshtastic BLE API docs
+// (MeshBluetoothService). Check docs if they change in the future.
+// Service: https://meshtastic.org/docs/development/device/client-api/#bluetooth-meshbluetoothservice
+static const char *MESHTASTIC_SERVICE_UUID = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
+// Characteristics:
+// FromRadio (read):      2c55e69e-4993-11ed-b878-0242ac120002
+// ToRadio   (write):     f75c76d2-129e-4dad-a1dd-7866124401e7
+// FromNum   (r/n/w):     ed9da18c-a800-4f66-a670-aa7547e34453 (not used yet in this PoC)
+static const char *MESHTASTIC_CHAR_FROM_RADIO_UUID = "2c55e69e-4993-11ed-b878-0242ac120002"; // read
+static const char *MESHTASTIC_CHAR_TO_RADIO_UUID = "f75c76d2-129e-4dad-a1dd-7866124401e7";   // write
 
 // ---------- FORWARD DECLARATIONS ----------
 void startScan();
@@ -60,7 +66,8 @@ class ClientCallbacks : public NimBLEClientCallbacks
     Serial.print(reason);
     Serial.println(")");
     g_connected = false;
-    g_client = nullptr;
+    // Do not clear g_client here to avoid race conditions in connectToMeshtastic
+    // g_client = nullptr;
     g_radioService = nullptr;
     g_charToRadio = nullptr;
     g_charFromRadio = nullptr;
@@ -203,6 +210,13 @@ bool connectToMeshtastic()
     return false;
   }
 
+  // Clean up old client if it exists
+  if (g_client)
+  {
+    NimBLEDevice::deleteClient(g_client);
+    g_client = nullptr;
+  }
+
   Serial.println("Creating BLE client...");
   g_client = NimBLEDevice::createClient();
   g_client->setClientCallbacks(new ClientCallbacks(), false);
@@ -216,13 +230,34 @@ bool connectToMeshtastic()
     return false;
   }
 
-  Serial.println("Connected. Discovering Meshtastic service...");
+  Serial.println("Connected. Proceeding to discover Meshtastic service...");
+
+  // --- Debug: list all services and look for Meshtastic UUID ---
+  Serial.println("Discovering services...");
+  const std::vector<NimBLERemoteService *> &services = g_client->getServices(true);
+  if (services.empty())
+  {
+    Serial.println("No services found on device.");
+  }
+  else
+  {
+    Serial.print("Found ");
+    Serial.print(services.size());
+    Serial.println(" services:");
+    for (auto *svc : services)
+    {
+      Serial.print("  Service UUID: ");
+      Serial.println(svc->getUUID().toString().c_str());
+    }
+  }
+
+  Serial.print("Looking up Meshtastic service UUID: ");
+  Serial.println(MESHTASTIC_SERVICE_UUID);
   g_radioService = g_client->getService(MESHTASTIC_SERVICE_UUID);
   if (!g_radioService)
   {
-    Serial.println("Failed to find Meshtastic service.");
-    g_client->disconnect();
-    return false;
+    Serial.println("Failed to find Meshtastic service by UUID, but keeping connection open.");
+    return false; // report failure but do not disconnect; caller can decide next steps
   }
 
   Serial.println("Getting ToRadio characteristic (write)...");
@@ -230,7 +265,6 @@ bool connectToMeshtastic()
   if (!g_charToRadio)
   {
     Serial.println("Failed to find ToRadio characteristic.");
-    g_client->disconnect();
     return false;
   }
 
@@ -239,7 +273,6 @@ bool connectToMeshtastic()
   if (!g_charFromRadio)
   {
     Serial.println("Failed to find FromRadio characteristic.");
-    g_client->disconnect();
     return false;
   }
 
@@ -249,7 +282,6 @@ bool connectToMeshtastic()
     if (!g_charFromRadio->subscribe(true, fromRadioNotifyCallback))
     {
       Serial.println("Failed to subscribe FromRadio.");
-      g_client->disconnect();
       return false;
     }
   }
@@ -302,8 +334,12 @@ void setup()
 
   // Initialize BLE
   NimBLEDevice::init("ESP32-Meshtastic-Logger");
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9);             // highest power
-  NimBLEDevice::setSecurityAuth(false, false, false); // no security for PoC
+  NimBLEDevice::setPower(ESP_PWR_LVL_P9); // highest power
+
+  // Security configuration for fixed PIN
+  NimBLEDevice::setSecurityAuth(true, true, true); // bonding, mitm, sc
+  NimBLEDevice::setSecurityPasskey(BLE_PASSKEY);
+  NimBLEDevice::setSecurityIOCap(BLE_HS_IO_KEYBOARD_ONLY);
 
   startScan();
 }
