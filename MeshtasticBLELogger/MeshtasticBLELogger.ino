@@ -1,6 +1,7 @@
 #include "NimBLEDevice.h"
 #include "Arduino.h"
 #include "src/protobufs/mesh.pb.h"
+#include "src/protobufs/portnums.pb.h"
 #include "src/nanopb/pb.h"
 #include "src/nanopb/pb_decode.h"
 #include "src/nanopb/pb_encode.h"
@@ -21,45 +22,56 @@ const char *firmwareRevUuid = "2a26";
 const char *softwareRevUuid = "2a28";
 
 static uint32_t wantConfigId;
+static NimBLERemoteCharacteristic *fromRadio;
+static NimBLERemoteCharacteristic *toRadio;
+static NimBLERemoteCharacteristic *fromNum;
+static volatile bool fromRadioPending;
+static const int maxNotifyQueue = 8;
+static volatile int notifyQueueCount;
 
-void drainFromRadio(NimBLERemoteCharacteristic *characteristic)
+bool readFromRadioPacket(std::string &packet)
 {
-  if (!characteristic)
+  packet = fromRadio->readValue();
+  return !packet.empty();
+}
+
+void decodeFromRadioPacket(const std::string &packet)
+{
+  meshtastic_FromRadio msg = meshtastic_FromRadio_init_zero;
+  pb_istream_t stream = pb_istream_from_buffer(reinterpret_cast<const uint8_t *>(packet.data()), packet.size());
+  if (!pb_decode(&stream, meshtastic_FromRadio_fields, &msg))
   {
+    Serial.println("FromRadio decode failed");
     return;
   }
 
+  if (msg.which_payload_variant == meshtastic_FromRadio_packet_tag)
+  {
+    const meshtastic_Data &d = msg.packet.decoded;
+    if (d.portnum == meshtastic_PortNum_TEXT_MESSAGE_APP && d.payload.size > 0)
+    {
+      Serial.print("Port ");
+      Serial.print(d.portnum);
+      Serial.print(" Text ");
+      Serial.write(d.payload.bytes, d.payload.size);
+      Serial.println();
+    }
+  }
+}
+
+void drainFromRadio()
+{
   while (true)
   {
-    std::string packet = characteristic->readValue();
-    if (packet.empty())
+    std::string packet;
+    if (!readFromRadioPacket(packet))
     {
       Serial.println("FromRadio empty");
       break;
     }
     Serial.print("FromRadio bytes ");
     Serial.println(packet.size());
-
-    meshtastic_FromRadio msg = meshtastic_FromRadio_init_zero;
-    pb_istream_t stream = pb_istream_from_buffer(reinterpret_cast<const uint8_t *>(packet.data()), packet.size());
-    if (!pb_decode(&stream, meshtastic_FromRadio_fields, &msg))
-    {
-      Serial.println("FromRadio decode failed");
-      continue;
-    }
-
-    if (msg.which_payload_variant == meshtastic_FromRadio_packet_tag)
-    {
-      const meshtastic_Data &d = msg.packet.decoded;
-      if (d.payload.size > 0)
-      {
-        Serial.print("Port ");
-        Serial.print(d.portnum);
-        Serial.print(" Text ");
-        Serial.write(d.payload.bytes, d.payload.size);
-        Serial.println();
-      }
-    }
+    decodeFromRadioPacket(packet);
   }
 }
 
@@ -189,15 +201,9 @@ void setup()
   Serial.print("Service ");
   Serial.println(targetService);
 
-  NimBLERemoteCharacteristic *fromRadio = service->getCharacteristic(uuidFromRadio);
-  NimBLERemoteCharacteristic *toRadio = service->getCharacteristic(uuidToRadio);
-  NimBLERemoteCharacteristic *fromNum = service->getCharacteristic(uuidFromNum);
-
-  if (!fromRadio || !toRadio || !fromNum)
-  {
-    Serial.println("Missing characteristic");
-    return;
-  }
+  fromRadio = service->getCharacteristic(uuidFromRadio);
+  toRadio = service->getCharacteristic(uuidToRadio);
+  fromNum = service->getCharacteristic(uuidFromNum);
 
   meshtastic_ToRadio req = meshtastic_ToRadio_init_zero;
   req.which_payload_variant = meshtastic_ToRadio_want_config_id_tag;
@@ -219,17 +225,25 @@ void setup()
   }
 
   Serial.println("Reading FromRadio");
-  drainFromRadio(fromRadio);
+  drainFromRadio();
 
-  auto notifyCallback = [fromRadio](NimBLERemoteCharacteristic *characteristic, uint8_t *, size_t, bool isNotify)
+  auto notifyCallback = [](NimBLERemoteCharacteristic *characteristic, uint8_t *, size_t, bool isNotify)
   {
     if (!isNotify)
     {
       return;
     }
-    Serial.print("FromNum ");
-    Serial.println(characteristic->getHandle());
-    drainFromRadio(fromRadio);
+    if (notifyQueueCount < maxNotifyQueue)
+    {
+      notifyQueueCount++;
+      fromRadioPending = true;
+      Serial.print("FromNum notify queued: ");
+      Serial.println(notifyQueueCount);
+    }
+    else
+    {
+      Serial.println("FromNum notify dropped (queue full)");
+    }
   };
 
   if (!fromNum->subscribe(true, notifyCallback, true))
@@ -238,4 +252,16 @@ void setup()
   }
 }
 
-void loop() {}
+void loop()
+{
+  if (fromRadioPending)
+  {
+    fromRadioPending = false;
+    int count = notifyQueueCount;
+    notifyQueueCount = 0;
+    Serial.print("Draining FromRadio for ");
+    Serial.print(count);
+    Serial.println(" notify events");
+    drainFromRadio();
+  }
+}
