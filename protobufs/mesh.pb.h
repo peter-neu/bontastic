@@ -3,7 +3,7 @@
 
 #ifndef PB_MESHTASTIC_MESHTASTIC_MESH_PB_H_INCLUDED
 #define PB_MESHTASTIC_MESHTASTIC_MESH_PB_H_INCLUDED
-#include <pb.h>
+#include "../nanopb/pb.h"
 #include "channel.pb.h"
 #include "config.pb.h"
 #include "device_ui.pb.h"

@@ -3,7 +3,7 @@
 
 #ifndef PB_MESHTASTIC_MESHTASTIC_CLIENTONLY_PB_H_INCLUDED
 #define PB_MESHTASTIC_MESHTASTIC_CLIENTONLY_PB_H_INCLUDED
-#include <pb.h>
+#include "../nanopb/pb.h"
 #include "localonly.pb.h"
 #include "mesh.pb.h"
 

@@ -3,7 +3,7 @@
 
 #ifndef PB_MESHTASTIC_MESHTASTIC_CONFIG_PB_H_INCLUDED
 #define PB_MESHTASTIC_MESHTASTIC_CONFIG_PB_H_INCLUDED
-#include <pb.h>
+#include "../nanopb/pb.h"
 #include "device_ui.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40

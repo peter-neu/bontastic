@@ -33,12 +33,12 @@ static NimBLERemoteCharacteristic* g_charFromRadio = nullptr;
 
 // ---------- NANOPB / PROTO INCLUDES ----------
 //
-// You must generate these from Meshtastic .proto definitions using nanopb.
-// See instructions at the end of this file.
+// Protobuf definitions are in the protobufs/ subdirectory
+// Nanopb runtime is in the nanopb/ subdirectory
 extern "C" {
-  #include "meshtastic.pb.h"   // Contains ToRadio, FromRadio, MeshPacket etc.
-  #include "pb_decode.h"
-  #include "pb_encode.h"
+  #include "protobufs/meshtastic.pb.h"   // Contains ToRadio, FromRadio, MeshPacket etc.
+  #include "nanopb/pb_decode.h"
+  #include "nanopb/pb_encode.h"
 }
 
 // ---------- BLE CALLBACKS ----------

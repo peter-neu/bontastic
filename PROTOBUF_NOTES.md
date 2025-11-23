@@ -135,12 +135,33 @@ The original sketch expected different field names. Here are the key mappings:
 3. **MeshPacket decoded access**: Use `payload_variant.decoded` instead of direct `decoded` field
 4. **Check decoded**: Use `which_payload_variant == meshtastic_MeshPacket_decoded_tag` instead of `has_decoded`
 
+## Directory Structure
+
+```
+bontastic/
+├── MeshtasticBLELogger.ino
+├── protobufs/              # Generated protobuf files
+│   ├── meshtastic.pb.h     # Main wrapper header
+│   ├── mesh.pb.c/h         # Core message definitions
+│   ├── portnums.pb.c/h     # Port number enums
+│   └── *.pb.c/h            # Other proto definitions
+└── nanopb/                 # Nanopb runtime library
+    ├── pb.h
+    ├── pb_common.c/h
+    ├── pb_decode.c/h
+    └── pb_encode.c/h
+```
+
 ## Compilation
 
 These files should compile with the Arduino IDE for ESP32. The nanopb library is designed to be lightweight and work on embedded systems.
 
-All `.pb.c` and `.pb.h` files plus the nanopb runtime files are in the same directory as the `.ino` sketch file. The Arduino IDE will automatically compile all `.c` files.
+The Arduino IDE will automatically compile all `.c` files in subdirectories. The sketch includes files from the `protobufs/` and `nanopb/` subdirectories:
 
-**Note**: The include paths in the generated files have been fixed to remove the `meshtastic/` subdirectory prefix, since all files are in a flat directory structure.
+```cpp
+#include "protobufs/meshtastic.pb.h"
+#include "nanopb/pb_decode.h"
+#include "nanopb/pb_encode.h"
+```
 
-A wrapper header `meshtastic.pb.h` is provided that includes `mesh.pb.h`, which in turn includes all dependent protobuf headers.
+A wrapper header `protobufs/meshtastic.pb.h` is provided that includes `mesh.pb.h`, which in turn includes all dependent protobuf headers.

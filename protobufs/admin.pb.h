@@ -3,7 +3,7 @@
 
 #ifndef PB_MESHTASTIC_MESHTASTIC_ADMIN_PB_H_INCLUDED
 #define PB_MESHTASTIC_MESHTASTIC_ADMIN_PB_H_INCLUDED
-#include <pb.h>
+#include "../nanopb/pb.h"
 #include "channel.pb.h"
 #include "config.pb.h"
 #include "connection_status.pb.h"
