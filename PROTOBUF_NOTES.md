@@ -139,4 +139,8 @@ The original sketch expected different field names. Here are the key mappings:
 
 These files should compile with the Arduino IDE for ESP32. The nanopb library is designed to be lightweight and work on embedded systems.
 
-Include all `.pb.c` and `.pb.h` files plus the nanopb runtime files in the same directory as the `.ino` sketch file.
+All `.pb.c` and `.pb.h` files plus the nanopb runtime files are in the same directory as the `.ino` sketch file. The Arduino IDE will automatically compile all `.c` files.
+
+**Note**: The include paths in the generated files have been fixed to remove the `meshtastic/` subdirectory prefix, since all files are in a flat directory structure.
+
+A wrapper header `meshtastic.pb.h` is provided that includes `mesh.pb.h`, which in turn includes all dependent protobuf headers.
