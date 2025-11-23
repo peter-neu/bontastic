@@ -8,6 +8,7 @@
 
 const char *targetName = "🚐_cdb5";
 const uint32_t targetPasskey = 123456;
+
 const char *targetService = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
 const char *uuidFromRadio = "2c55e69e-4993-11ed-b878-0242ac120002";
 const char *uuidToRadio = "f75c76d2-129e-4dad-a1dd-7866124401e7";
@@ -48,13 +49,73 @@ void decodeFromRadioPacket(const std::string &packet)
   if (msg.which_payload_variant == meshtastic_FromRadio_packet_tag)
   {
     const meshtastic_Data &d = msg.packet.decoded;
-    if (d.portnum == meshtastic_PortNum_TEXT_MESSAGE_APP && d.payload.size > 0)
+    Serial.print("Port ");
+    Serial.print(d.portnum);
+    Serial.print(" Len ");
+    Serial.println(d.payload.size);
+
+    switch (d.portnum)
     {
-      Serial.print("Port ");
-      Serial.print(d.portnum);
-      Serial.print(" Text ");
-      Serial.write(d.payload.bytes, d.payload.size);
+    case meshtastic_PortNum_TEXT_MESSAGE_APP:
+      if (d.payload.size > 0)
+      {
+        Serial.print("TEXT: ");
+        Serial.write(d.payload.bytes, d.payload.size);
+        Serial.println();
+      }
+      break;
+
+    case meshtastic_PortNum_POSITION_APP:
+    {
+      meshtastic_Position position = meshtastic_Position_init_zero;
+      pb_istream_t ps = pb_istream_from_buffer(d.payload.bytes, d.payload.size);
+      if (pb_decode(&ps, meshtastic_Position_fields, &position))
+      {
+        Serial.print("POS lat=");
+        Serial.print(position.latitude_i / 1e7);
+        Serial.print(" lon=");
+        Serial.print(position.longitude_i / 1e7);
+        Serial.print(" alt=");
+        Serial.println(position.altitude);
+      }
+      else
+      {
+        Serial.println("POS decode fail");
+      }
+      break;
+    }
+
+    case meshtastic_PortNum_NODEINFO_APP:
+    {
+      meshtastic_NodeInfo node = meshtastic_NodeInfo_init_zero;
+      pb_istream_t ns = pb_istream_from_buffer(d.payload.bytes, d.payload.size);
+      if (pb_decode(&ns, meshtastic_NodeInfo_fields, &node))
+      {
+        Serial.print("NODE ");
+        Serial.print(node.num);
+        Serial.print(" ");
+        Serial.println(node.user.long_name);
+      }
+      else
+      {
+        Serial.println("NODE decode fail");
+      }
+      break;
+    }
+
+    default:
+      Serial.print("BIN ");
+      for (size_t i = 0; i < d.payload.size; ++i)
+      {
+        uint8_t b = d.payload.bytes[i];
+        if (b < 16)
+        {
+          Serial.print("0");
+        }
+        Serial.print(b, HEX);
+      }
       Serial.println();
+      break;
     }
   }
 }
