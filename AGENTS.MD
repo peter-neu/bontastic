@@ -1,22 +1,25 @@
-# Agent Tasks
+## BLE connection Proof-of-concept
 
-## Completed Tasks
 
-### ✅ Generate Protobufs for ESP32 Meshtastic BLE Logger
+Goal: Connect to a Bluetooth device with a bluetooth pairing code, using the ESP32 Nimble library by h2zero.
 
-**Date**: 2025-11-23  
-**Status**: Complete
+Caveats:
+Do not confuse the syntax! Check the repository with tool-calls if necessary [Nimble Library](https://github.com/h2zero/NimBLE-Arduino)
 
-Generated nanopb C files from Meshtastic protobuf definitions (commit 52fa252f). All files are organized in subdirectories:
-- `protobufs/` - 23 .pb.c and 24 .pb.h files  
-- `nanopb/` - Runtime library (pb.h, pb_common.*, pb_decode.*, pb_encode.*)
 
-The ESP32 Arduino sketch can now decode Meshtastic BLE messages including FromRadio, ToRadio, MeshPacket, and text payloads.
+Style-Guide:
+Since we want to create an POC and evaluate and learn the code, do NOT:
 
-**Documentation**: See `PROTOBUF_NOTES.md` for structure definitions, field mappings, and compilation instructions.
+- Create "fluff" like error handling, unnecessary case matching etc.
+- Do not write verbose code
+- Do not put comments in the code 
 
----
+Instead:
+- be concise
+- keep it simple!
+- minimum neccessary code
 
-## Future Tasks
 
-(Add new tasks here as needed)
+## Tasks
+
+- Create Code for listing all BLE devices (scan for 5 seconds)
