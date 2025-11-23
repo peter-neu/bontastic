@@ -114,16 +114,21 @@ static void printMeshPacket(const meshtastic_MeshPacket& pkt) {
   // Look for text payload in pkt.decoded or pkt.payload, depending on proto version.
   // Check actual field names/types from generated header.
 
-  if (pkt.has_decoded && pkt.decoded.portnum == meshtastic_PortNum_TEXT_MESSAGE_APP) {
-    // TEXT message
-    Serial.print("  [TEXT] ");
-    // decoded.payload is bytes; for PoC assume it's UTF‑8.
-    for (size_t i = 0; i < pkt.decoded.payload.size; ++i) {
-      Serial.print((char)pkt.decoded.payload.bytes[i]);
+  if (pkt.which_payload_variant == meshtastic_MeshPacket_decoded_tag) {
+    const meshtastic_Data& decoded = pkt.payload_variant.decoded;
+    if (decoded.portnum == meshtastic_PortNum_TEXT_MESSAGE_APP) {
+      // TEXT message
+      Serial.print("  [TEXT] ");
+      // decoded.payload is bytes; for PoC assume it's UTF‑8.
+      for (size_t i = 0; i < decoded.payload.size; ++i) {
+        Serial.print((char)decoded.payload.bytes[i]);
+      }
+      Serial.println();
+    } else {
+      Serial.println("  Non‑text packet type.");
     }
-    Serial.println();
   } else {
-    Serial.println("  Non‑text or unknown packet type.");
+    Serial.println("  Encrypted or unknown packet type.");
   }
 }
 
