@@ -22,4 +22,4 @@ Instead:
 
 ## Tasks
 
-- Create Code for listing all BLE devices (scan for 5 seconds)
+- Implement standard BLE contract for DeviceInformationService and print to serial
