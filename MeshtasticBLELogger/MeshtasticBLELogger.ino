@@ -1,5 +1,6 @@
 #include "NimBLEDevice.h"
 #include "Arduino.h"
+#include "PrintHelpers.h"
 #include "src/protobufs/mesh.pb.h"
 #include "src/protobufs/portnums.pb.h"
 #include "src/nanopb/pb.h"
@@ -60,8 +61,7 @@ void decodeFromRadioPacket(const std::string &packet)
       if (d.payload.size > 0)
       {
         Serial.print("TEXT: ");
-        Serial.write(d.payload.bytes, d.payload.size);
-        Serial.println();
+        printTextMessage(d.payload.bytes, d.payload.size);
       }
       break;
 
@@ -71,12 +71,7 @@ void decodeFromRadioPacket(const std::string &packet)
       pb_istream_t ps = pb_istream_from_buffer(d.payload.bytes, d.payload.size);
       if (pb_decode(&ps, meshtastic_Position_fields, &position))
       {
-        Serial.print("POS lat=");
-        Serial.print(position.latitude_i / 1e7);
-        Serial.print(" lon=");
-        Serial.print(position.longitude_i / 1e7);
-        Serial.print(" alt=");
-        Serial.println(position.altitude);
+        printPosition(position.latitude_i / 1e7, position.longitude_i / 1e7, position.altitude);
       }
       else
       {
@@ -91,10 +86,7 @@ void decodeFromRadioPacket(const std::string &packet)
       pb_istream_t ns = pb_istream_from_buffer(d.payload.bytes, d.payload.size);
       if (pb_decode(&ns, meshtastic_NodeInfo_fields, &node))
       {
-        Serial.print("NODE ");
-        Serial.print(node.num);
-        Serial.print(" ");
-        Serial.println(node.user.long_name);
+        printNodeInfo(node.num, node.user.long_name);
       }
       else
       {
@@ -105,16 +97,7 @@ void decodeFromRadioPacket(const std::string &packet)
 
     default:
       Serial.print("BIN ");
-      for (size_t i = 0; i < d.payload.size; ++i)
-      {
-        uint8_t b = d.payload.bytes[i];
-        if (b < 16)
-        {
-          Serial.print("0");
-        }
-        Serial.print(b, HEX);
-      }
-      Serial.println();
+      printBinaryPayload(d.payload.bytes, d.payload.size);
       break;
     }
   }
@@ -163,6 +146,8 @@ class ClientCallbacks : public NimBLEClientCallbacks
 void setup()
 {
   Serial.begin(115200);
+  printerSetup();
+
   while (!Serial)
   {
   }
@@ -233,9 +218,7 @@ void setup()
         return;
       }
       std::string v = c->readValue();
-      Serial.print(name);
-      Serial.print(": ");
-      Serial.println(v.c_str());
+      printInfo(name, v.c_str());
     };
 
     printChar("Manufacturer", manufacturerUuid);

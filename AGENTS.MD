@@ -21,5 +21,3 @@ Instead:
 
 
 ## Tasks
-
-- Implement standard BLE contract for DeviceInformationService and print to serial
