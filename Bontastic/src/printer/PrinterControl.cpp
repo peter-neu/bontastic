@@ -22,7 +22,8 @@ static const char *fieldUuids[] = {
     "5a1a0009-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a000a-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a000b-8f19-4a86-9a9e-7b4f7f9b0002",
-    "5a1a000c-8f19-4a86-9a9e-7b4f7f9b0002"};
+    "5a1a000c-8f19-4a86-9a9e-7b4f7f9b0002",
+    "5a1a000d-8f19-4a86-9a9e-7b4f7f9b0002"};
 
 enum SettingField : uint8_t
 {
@@ -37,6 +38,7 @@ enum SettingField : uint8_t
     JustifySelect,
     Decorations,
     Feed,
+    PrintText,
     FieldCount
 };
 
@@ -75,6 +77,8 @@ static const char *fieldLabel(uint8_t field)
         return "DECOR";
     case Feed:
         return "FEED";
+    case PrintText:
+        return "PRINT";
     default:
         return nullptr;
     }
@@ -91,6 +95,7 @@ static const char *fieldKeys[] = {
     "size",
     "justify",
     "decorations",
+    nullptr,
     nullptr};
 
 static uint8_t *fieldSlot(uint8_t field);
@@ -173,6 +178,8 @@ static uint8_t *fieldSlot(uint8_t field)
         return &printerSettings.decorations;
     case Feed:
         return &printerSettings.feedRows;
+    case PrintText:
+        return nullptr;
     default:
         return nullptr;
     }
@@ -204,6 +211,8 @@ static uint16_t clampField(uint8_t field, int value)
         return constrain(value, 0, 15);
     case Feed:
         return constrain(value, 0, 50);
+    case PrintText:
+        return 0;
     default:
         return value < 0 ? 0 : value;
     }
@@ -310,6 +319,12 @@ static void handleWrite(uint8_t field, const std::string &payload)
 {
     if (payload.empty())
     {
+        return;
+    }
+    if (field == PrintText)
+    {
+        printer.println(payload.c_str());
+        printer.feed(2);
         return;
     }
     int value = atoi(payload.c_str());

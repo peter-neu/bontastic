@@ -36,12 +36,12 @@ void printPosition(double lat, double lon, int32_t alt)
     Serial.print(" alt=");
     Serial.println(alt);
 
-    printer.print("POS lat=");
-    printer.print(lat, 7);
-    printer.print(" lon=");
-    printer.print(lon, 7);
-    printer.print(" alt=");
-    printer.println(alt);
+    // printer.print("POS lat=");
+    // printer.print(lat, 7);
+    // printer.print(" lon=");
+    // printer.print(lon, 7);
+    // printer.print(" alt=");
+    // printer.println(alt);
 }
 
 void printNodeInfo(uint32_t num, const char *name)
