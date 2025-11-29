@@ -27,7 +27,7 @@ jobs:
             - name: Upload static site
               uses: actions/upload-pages-artifact@v3
               with:
-                  path: web
+                  path: bontastic/web
 
     deploy:
         needs: build
