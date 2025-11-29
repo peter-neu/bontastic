@@ -54,7 +54,7 @@ static const uint16_t printerAppearance = 0x03C0;
 
 static NimBLEServer *printerServer;
 static NimBLECharacteristic *characteristics[FieldCount];
-static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0, 0, 0, "MO1_1dfd", "123456"};
+static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0, 2, 23, "MO1_1dfd", "123456"};
 static PrinterSettings printerSettings = defaultSettings;
 static Preferences printerPrefs;
 static bool prefsReady;
@@ -387,7 +387,8 @@ static void handleWrite(uint8_t field, const std::string &payload)
     }
     if (field == PrintText)
     {
-        printer.println(payload.c_str());
+        std::string iso = utf8ToIso88591(payload);
+        printer.println(iso.c_str());
         printer.feed(2);
         return;
     }

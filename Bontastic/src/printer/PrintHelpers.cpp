@@ -16,15 +16,56 @@ void printerSetup()
     printer.justify('L'); // Left justified text
 }
 
+std::string utf8ToIso88591(const std::string &utf8)
+{
+    std::string iso;
+    iso.reserve(utf8.size());
+    for (size_t i = 0; i < utf8.size(); ++i)
+    {
+        uint8_t c = utf8[i];
+        if (c < 0x80)
+        {
+            iso += (char)c;
+        }
+        else if ((c & 0xE0) == 0xC0) // 2-byte sequence
+        {
+            if (i + 1 < utf8.size())
+            {
+                uint8_t c2 = utf8[i + 1];
+                if ((c2 & 0xC0) == 0x80)
+                {
+                    uint16_t cp = ((c & 0x1F) << 6) | (c2 & 0x3F);
+                    if (cp <= 0xFF)
+                    {
+                        iso += (char)cp;
+                    }
+                    else
+                    {
+                        iso += '?'; // Character not in ISO-8859-1
+                    }
+                    i++; // Skip next byte
+                }
+            }
+        }
+        else
+        {
+            // 3+ byte sequences or invalid UTF-8, skip or replace
+            // For now, just ignore or maybe add '?'
+            // If we just skip, we might miss characters.
+            // But ISO-8859-1 only supports up to U+00FF.
+            // So 3-byte sequences (U+0800+) are definitely out.
+        }
+    }
+    return iso;
+}
+
 void printTextMessage(const uint8_t *data, size_t size)
 {
     Serial.write(data, size);
     Serial.println();
-    for (size_t i = 0; i < size; ++i)
-    {
-        printer.print((char)data[i]);
-    }
-    printer.println();
+    std::string utf8((const char *)data, size);
+    std::string iso = utf8ToIso88591(utf8);
+    printer.println(iso.c_str());
 }
 
 void printPosition(double lat, double lon, int32_t alt)
