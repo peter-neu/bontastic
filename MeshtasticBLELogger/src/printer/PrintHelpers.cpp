@@ -69,17 +69,6 @@ void printBinaryPayload(const uint8_t *data, size_t size)
         Serial.print(b, HEX);
     }
     Serial.println();
-
-    for (size_t i = 0; i < size; ++i)
-    {
-        uint8_t b = data[i];
-        if (b < 16)
-        {
-            printer.print("0");
-        }
-        printer.print(b, HEX);
-    }
-    printer.println();
 }
 
 void printInfo(const char *label, const char *value)

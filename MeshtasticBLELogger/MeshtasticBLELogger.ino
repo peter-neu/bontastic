@@ -7,7 +7,9 @@
 #include "src/nanopb/pb_decode.h"
 #include "src/nanopb/pb_encode.h"
 
-const char *targetName = "🚐_cdb5";
+#include "src/printer/PrintHelpers.h"
+
+const char *targetName = "MO1_1dfd";
 const uint32_t targetPasskey = 123456;
 
 const char *targetService = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
