@@ -23,7 +23,9 @@ static const char *fieldUuids[] = {
     "5a1a000a-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a000b-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a000c-8f19-4a86-9a9e-7b4f7f9b0002",
-    "5a1a000d-8f19-4a86-9a9e-7b4f7f9b0002"};
+    "5a1a000d-8f19-4a86-9a9e-7b4f7f9b0002",
+    "5a1a000e-8f19-4a86-9a9e-7b4f7f9b0002",
+    "5a1a000f-8f19-4a86-9a9e-7b4f7f9b0002"};
 
 enum SettingField : uint8_t
 {
@@ -39,6 +41,8 @@ enum SettingField : uint8_t
     Decorations,
     Feed,
     PrintText,
+    MeshName,
+    MeshPin,
     FieldCount
 };
 
@@ -46,7 +50,7 @@ static const uint16_t printerAppearance = 0x03C0;
 
 static NimBLEServer *printerServer;
 static NimBLECharacteristic *characteristics[FieldCount];
-static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0};
+static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0, "MO1_1dfd", "123456"};
 static PrinterSettings printerSettings = defaultSettings;
 static Preferences printerPrefs;
 static bool prefsReady;
@@ -79,6 +83,10 @@ static const char *fieldLabel(uint8_t field)
         return "FEED";
     case PrintText:
         return "PRINT";
+    case MeshName:
+        return "MESH_NAME";
+    case MeshPin:
+        return "MESH_PIN";
     default:
         return nullptr;
     }
@@ -96,9 +104,11 @@ static const char *fieldKeys[] = {
     "justify",
     "decorations",
     nullptr,
-    nullptr};
+    nullptr,
+    "meshName",
+    "meshPin"};
 
-static uint8_t *fieldSlot(uint8_t field);
+static void *fieldSlot(uint8_t field);
 
 static void ensurePrefs()
 {
@@ -123,12 +133,20 @@ static void loadSettings()
         {
             continue;
         }
-        uint8_t *slot = fieldSlot(i);
+        void *slot = fieldSlot(i);
         if (!slot)
         {
             continue;
         }
-        *slot = printerPrefs.getUChar(key, *slot);
+        if (i == MeshName || i == MeshPin)
+        {
+            String val = printerPrefs.getString(key, i == MeshName ? defaultSettings.meshName : defaultSettings.meshPin);
+            strlcpy((char *)slot, val.c_str(), i == MeshName ? sizeof(printerSettings.meshName) : sizeof(printerSettings.meshPin));
+        }
+        else
+        {
+            *(uint8_t *)slot = printerPrefs.getUChar(key, *(uint8_t *)slot);
+        }
     }
 }
 
@@ -144,15 +162,22 @@ static void persistField(uint8_t field)
     {
         return;
     }
-    uint8_t *slot = fieldSlot(field);
+    void *slot = fieldSlot(field);
     if (!slot)
     {
         return;
     }
-    printerPrefs.putUChar(key, *slot);
+    if (field == MeshName || field == MeshPin)
+    {
+        printerPrefs.putString(key, (char *)slot);
+    }
+    else
+    {
+        printerPrefs.putUChar(key, *(uint8_t *)slot);
+    }
 }
 
-static uint8_t *fieldSlot(uint8_t field)
+static void *fieldSlot(uint8_t field)
 {
     switch (field)
     {
@@ -178,6 +203,10 @@ static uint8_t *fieldSlot(uint8_t field)
         return &printerSettings.decorations;
     case Feed:
         return &printerSettings.feedRows;
+    case MeshName:
+        return printerSettings.meshName;
+    case MeshPin:
+        return printerSettings.meshPin;
     case PrintText:
         return nullptr;
     default:
@@ -234,11 +263,19 @@ static void syncField(uint8_t field, bool notify)
     {
         return;
     }
-    uint8_t *slot = fieldSlot(field);
-    uint16_t value = slot ? *slot : 0;
-    char buffer[8];
-    size_t len = snprintf(buffer, sizeof(buffer), "%u", value);
-    c->setValue(reinterpret_cast<uint8_t *>(buffer), len);
+    void *slot = fieldSlot(field);
+    if (field == MeshName || field == MeshPin)
+    {
+        c->setValue(std::string((char *)slot));
+    }
+    else
+    {
+        uint8_t val = slot ? *(uint8_t *)slot : 0;
+        char buffer[8];
+        size_t len = snprintf(buffer, sizeof(buffer), "%u", val);
+        c->setValue(reinterpret_cast<uint8_t *>(buffer), len);
+    }
+
     if (notify)
     {
         c->notify();
@@ -252,9 +289,16 @@ static void logField(uint8_t field, uint16_t value)
     {
         return;
     }
-    char text[12];
-    snprintf(text, sizeof(text), "%u", value);
-    printInfo(label, text);
+    if (field == MeshName || field == MeshPin)
+    {
+        printInfo(label, (char *)fieldSlot(field));
+    }
+    else
+    {
+        char text[12];
+        snprintf(text, sizeof(text), "%u", value);
+        printInfo(label, text);
+    }
 }
 
 static void applyPrinterConfig()
@@ -327,6 +371,17 @@ static void handleWrite(uint8_t field, const std::string &payload)
         printer.feed(2);
         return;
     }
+    if (field == MeshName || field == MeshPin)
+    {
+        char *slot = (char *)fieldSlot(field);
+        size_t maxLen = (field == MeshName) ? sizeof(printerSettings.meshName) : sizeof(printerSettings.meshPin);
+        strlcpy(slot, payload.c_str(), maxLen);
+        syncField(field, true);
+        persistField(field);
+        logField(field, 0);
+        return;
+    }
+
     int value = atoi(payload.c_str());
     uint16_t clamped = clampField(field, value);
     if (field == Feed)
@@ -336,7 +391,7 @@ static void handleWrite(uint8_t field, const std::string &payload)
         applyFeed();
         return;
     }
-    uint8_t *slot = fieldSlot(field);
+    uint8_t *slot = (uint8_t *)fieldSlot(field);
     if (!slot)
     {
         return;

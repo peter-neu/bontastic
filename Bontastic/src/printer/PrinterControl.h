@@ -15,6 +15,8 @@ struct PrinterSettings
     uint8_t justify;
     uint8_t decorations;
     uint8_t feedRows;
+    char meshName[32];
+    char meshPin[16];
 };
 
 void setupPrinterControl();

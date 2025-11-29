@@ -9,8 +9,6 @@
 #include "src/printer/PrintHelpers.h"
 #include "src/printer/PrinterControl.h"
 
-const char *targetName = "MO1_1dfd";
-const uint32_t targetPasskey = 123456;
 const char *localDeviceName = "Bontastic Printer";
 
 const char *targetService = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
@@ -137,7 +135,8 @@ class ClientCallbacks : public NimBLEClientCallbacks
   void onPassKeyEntry(NimBLEConnInfo &info) override
   {
     Serial.println("Passkey requested");
-    NimBLEDevice::injectPassKey(info, targetPasskey);
+    uint32_t passkey = atoi(getPrinterSettings().meshPin);
+    NimBLEDevice::injectPassKey(info, passkey);
   }
 
   void onAuthenticationComplete(NimBLEConnInfo &) override
@@ -159,19 +158,21 @@ void setup()
   wantConfigId = millis() & 0xFFFF;
 
   NimBLEDevice::init(localDeviceName);
+  setupPrinterControl();
   NimBLEDevice::deleteAllBonds();
   Serial.println("Cleared bonds");
   NimBLEDevice::setMTU(512);
   NimBLEDevice::setSecurityAuth(false, false, false);
   NimBLEDevice::setSecurityIOCap(BLE_HS_IO_KEYBOARD_ONLY);
-  NimBLEDevice::setSecurityPasskey(targetPasskey);
-  setupPrinterControl();
+  NimBLEDevice::setSecurityPasskey(atoi(getPrinterSettings().meshPin));
+
   NimBLEScan *scan = NimBLEDevice::getScan();
   scan->setActiveScan(true);
   NimBLEScanResults results = scan->getResults(5 * 1000, false);
   Serial.println("Scan completed");
 
   const NimBLEAdvertisedDevice *targetDevice = nullptr;
+  const char *targetName = getPrinterSettings().meshName;
   for (int i = 0; i < results.getCount(); ++i)
   {
     const NimBLEAdvertisedDevice *device = results.getDevice(i);
