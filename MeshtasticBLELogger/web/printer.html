@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Printer Override Console</title>
+    <title>Bontastic Controlcenter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script>
@@ -76,7 +76,7 @@
             <div class="flex flex-wrap gap-4 justify-between items-start">
                 <div>
                     <p class="text-sm tracking-[0.4em] text-green-400/70">SYSTEM ONLINE</p>
-                    <h1 class="text-3xl md:text-4xl font-bold text-green-300">PRINTER_OVERRIDE</h1>
+                    <h1 class="text-3xl md:text-4xl font-bold text-green-300">BONTASTIC</h1>
                 </div>
                 <div class="flex flex-col items-end text-xs uppercase text-green-300/80">
                     <span>status :: {{ statusText }}</span>
@@ -101,50 +101,191 @@
                 <article
                     class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
                     <header class="flex justify-between items-center text-green-300">
-                        <h2 class="text-lg tracking-wide">THERMAL CORE</h2>
-                        <span class="text-xs">{{ settings.temperature }}°C</span>
-                    </header>
-                    <div class="mt-6 space-y-4">
-                        <div class="flex justify-between text-xs text-green-400/70">
-                            <span>0°C</span>
-                            <span>300°C</span>
-                        </div>
-                        <input type="range" min="0" max="300" step="1" v-model.number="settings.temperature"
-                            @change="updateSetting('temperature')" :disabled="!connected"
-                            class="w-full accent-green-400">
-                        <p class="text-xs text-green-200/70">regulates nozzle heat envelope</p>
-                    </div>
-                </article>
-                <article
-                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
-                    <header class="flex justify-between items-center text-green-300">
-                        <h2 class="text-lg tracking-wide">KINETIC FLOW</h2>
-                        <span class="text-xs">{{ settings.speed }} mm/s</span>
+                        <h2 class="text-lg tracking-wide">HEATING DOTS</h2>
+                        <span class="text-xs">{{ settings.heatDots }}</span>
                     </header>
                     <div class="mt-6 space-y-4">
                         <div class="flex justify-between text-xs text-green-400/70">
                             <span>0</span>
-                            <span>200</span>
+                            <span>15</span>
                         </div>
-                        <input type="range" min="0" max="200" step="1" v-model.number="settings.speed"
-                            @change="updateSetting('speed')" :disabled="!connected">
-                        <p class="text-xs text-green-200/70">stage velocity modifier</p>
+                        <input type="range" min="0" max="15" step="1" v-model.number="settings.heatDots"
+                            @change="updateSetting('heatDots')" :disabled="!connected" class="w-full accent-green-400">
+                        <p class="text-xs text-green-200/70">max simultaneous elements</p>
                     </div>
                 </article>
                 <article
                     class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
                     <header class="flex justify-between items-center text-green-300">
-                        <h2 class="text-lg tracking-wide">AIRFLOW VECTOR</h2>
-                        <span class="text-xs">{{ fanPercent }}%</span>
+                        <h2 class="text-lg tracking-wide">HEAT TIME</h2>
+                        <span class="text-xs">{{ settings.heatTime }} μs</span>
                     </header>
                     <div class="mt-6 space-y-4">
                         <div class="flex justify-between text-xs text-green-400/70">
-                            <span>0%</span>
-                            <span>100%</span>
+                            <span>0</span>
+                            <span>255</span>
                         </div>
-                        <input type="range" min="0" max="255" step="1" v-model.number="settings.fanSpeed"
-                            @change="updateSetting('fanSpeed')" :disabled="!connected">
-                        <p class="text-xs text-green-200/70">ducted cooling output</p>
+                        <input type="range" min="0" max="255" step="1" v-model.number="settings.heatTime"
+                            @change="updateSetting('heatTime')" :disabled="!connected">
+                        <p class="text-xs text-green-200/70">pulse duration per line</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">HEAT INTERVAL</h2>
+                        <span class="text-xs">{{ settings.heatInterval }} μs</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <div class="flex justify-between text-xs text-green-400/70">
+                            <span>0</span>
+                            <span>255</span>
+                        </div>
+                        <input type="range" min="0" max="255" step="1" v-model.number="settings.heatInterval"
+                            @change="updateSetting('heatInterval')" :disabled="!connected">
+                        <p class="text-xs text-green-200/70">cool-down throttle</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid gap-6 md:grid-cols-3">
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">DENSITY</h2>
+                        <span class="text-xs">{{ settings.density }}</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <div class="flex justify-between text-xs text-green-400/70">
+                            <span>0</span>
+                            <span>31</span>
+                        </div>
+                        <input type="range" min="0" max="31" step="1" v-model.number="settings.density"
+                            @change="updateSetting('density')" :disabled="!connected">
+                        <p class="text-xs text-green-200/70">ink darkness envelope</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">BREAK TIME</h2>
+                        <span class="text-xs">{{ settings.breakTime * 250 }} μs</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <div class="flex justify-between text-xs text-green-400/70">
+                            <span>0</span>
+                            <span>7</span>
+                        </div>
+                        <input type="range" min="0" max="7" step="1" v-model.number="settings.breakTime"
+                            @change="updateSetting('breakTime')" :disabled="!connected">
+                        <p class="text-xs text-green-200/70">recovery parameter</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">LINE HEIGHT</h2>
+                        <span class="text-xs">{{ settings.lineHeight }} px</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <div class="flex justify-between text-xs text-green-400/70">
+                            <span>24</span>
+                            <span>64</span>
+                        </div>
+                        <input type="range" min="24" max="64" step="1" v-model.number="settings.lineHeight"
+                            @change="updateSetting('lineHeight')" :disabled="!connected">
+                        <p class="text-xs text-green-200/70">row spacing control</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid gap-6 md:grid-cols-3">
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">FONT</h2>
+                        <span class="text-xs">{{ settings.font ? 'B' : 'A' }}</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <select v-model.number="settings.font" @change="updateSetting('font')" :disabled="!connected"
+                            class="w-full bg-black/60 border border-green-500/40 rounded px-3 py-2 text-green-100">
+                            <option :value="0">Font A (standard)</option>
+                            <option :value="1">Font B (compact)</option>
+                        </select>
+                        <p class="text-xs text-green-200/70">printer glyph profile</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">SIZE</h2>
+                        <span class="text-xs">{{ sizeLabel }}</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <select v-model.number="settings.size" @change="updateSetting('size')" :disabled="!connected"
+                            class="w-full bg-black/60 border border-green-500/40 rounded px-3 py-2 text-green-100">
+                            <option :value="0">Small (S)</option>
+                            <option :value="1">Medium (M)</option>
+                            <option :value="2">Large (L)</option>
+                        </select>
+                        <p class="text-xs text-green-200/70">height + width preset</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">JUSTIFY</h2>
+                        <span class="text-xs">{{ justifyLabel }}</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <select v-model.number="settings.justify" @change="updateSetting('justify')"
+                            :disabled="!connected"
+                            class="w-full bg-black/60 border border-green-500/40 rounded px-3 py-2 text-green-100">
+                            <option :value="0">Left</option>
+                            <option :value="1">Center</option>
+                            <option :value="2">Right</option>
+                        </select>
+                        <p class="text-xs text-green-200/70">alignment directive</p>
+                    </div>
+                </article>
+            </section>
+
+            <section class="grid gap-6 md:grid-cols-2">
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)]">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">TEXT DECORATION</h2>
+                        <span class="text-xs">{{ decorationLabel }}</span>
+                    </header>
+                    <div class="mt-6 space-y-4">
+                        <select v-model.number="settings.decorations" @change="updateSetting('decorations')"
+                            :disabled="!connected"
+                            class="w-full bg-black/60 border border-green-500/40 rounded px-3 py-2 text-green-100">
+                            <option v-for="opt in decorationOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
+                        <p class="text-xs text-green-200/70">single selector for style masks</p>
+                    </div>
+                </article>
+                <article
+                    class="ghost-grid border border-green-500/20 rounded-xl p-5 bg-black/40 shadow-[0_0_30px_rgba(0,255,0,0.08)] space-y-4">
+                    <header class="flex justify-between items-center text-green-300">
+                        <h2 class="text-lg tracking-wide">FEED CONTROL</h2>
+                        <span class="text-xs">{{ settings.feed }} rows</span>
+                    </header>
+                    <div class="space-y-4">
+                        <input type="range" min="0" max="50" step="1" v-model.number="settings.feed"
+                            :disabled="!connected">
+                        <div class="flex gap-4">
+                            <button @click="sendFeed" :disabled="!connected || !settings.feed"
+                                class="px-5 py-2 border border-green-400/60 bg-green-500/10 hover:bg-green-500/20 text-green-200 rounded disabled:opacity-40">
+                                pulse feed
+                            </button>
+                            <button @click="settings.feed = 0" :disabled="!connected"
+                                class="px-4 py-2 border border-green-500/30 text-green-200 rounded">reset</button>
+                        </div>
+                        <p class="text-xs text-green-200/70">manual advance for testing media flow</p>
                     </div>
                 </article>
             </section>
@@ -168,9 +309,17 @@
     <script>
         const SERVICE_UUID = '5a1a0001-8f19-4a86-9a9e-7b4f7f9b0002';
         const CHAR_UUID = {
-            temperature: '5a1a0002-8f19-4a86-9a9e-7b4f7f9b0002',
-            speed: '5a1a0003-8f19-4a86-9a9e-7b4f7f9b0002',
-            fanSpeed: '5a1a0004-8f19-4a86-9a9e-7b4f7f9b0002'
+            heatDots: '5a1a0002-8f19-4a86-9a9e-7b4f7f9b0002',
+            heatTime: '5a1a0003-8f19-4a86-9a9e-7b4f7f9b0002',
+            heatInterval: '5a1a0004-8f19-4a86-9a9e-7b4f7f9b0002',
+            density: '5a1a0005-8f19-4a86-9a9e-7b4f7f9b0002',
+            breakTime: '5a1a0006-8f19-4a86-9a9e-7b4f7f9b0002',
+            lineHeight: '5a1a0007-8f19-4a86-9a9e-7b4f7f9b0002',
+            font: '5a1a0008-8f19-4a86-9a9e-7b4f7f9b0002',
+            size: '5a1a0009-8f19-4a86-9a9e-7b4f7f9b0002',
+            justify: '5a1a000a-8f19-4a86-9a9e-7b4f7f9b0002',
+            decorations: '5a1a000b-8f19-4a86-9a9e-7b4f7f9b0002',
+            feed: '5a1a000c-8f19-4a86-9a9e-7b4f7f9b0002'
         };
 
         const encoder = new TextEncoder();
@@ -190,17 +339,40 @@
                     notificationsEnabled: false,
                     statusText: 'standby',
                     settings: {
-                        temperature: 200,
-                        speed: 60,
-                        fanSpeed: 128
+                        heatDots: 11,
+                        heatTime: 120,
+                        heatInterval: 40,
+                        density: 10,
+                        breakTime: 2,
+                        lineHeight: 30,
+                        font: 0,
+                        size: 0,
+                        justify: 0,
+                        decorations: 0,
+                        feed: 0
                     },
+                    decorationOptions: [
+                        { value: 0, label: 'none' },
+                        { value: 1, label: 'bold' },
+                        { value: 2, label: 'inverse' },
+                        { value: 4, label: 'strike' },
+                        { value: 8, label: 'double width' },
+                        { value: 9, label: 'bold + double' }
+                    ],
                     log: [],
                     nextLogId: 0
                 };
             },
             computed: {
-                fanPercent() {
-                    return Math.round((this.settings.fanSpeed / 255) * 100);
+                sizeLabel() {
+                    return ['S', 'M', 'L'][this.settings.size] || 'S';
+                },
+                justifyLabel() {
+                    return ['left', 'center', 'right'][this.settings.justify] || 'left';
+                },
+                decorationLabel() {
+                    const match = this.decorationOptions.find(opt => opt.value === this.settings.decorations);
+                    return match ? match.label : this.settings.decorations;
                 }
             },
             methods: {
@@ -290,14 +462,15 @@
                     }
                 },
                 applySetting(key, value) {
-                    if (key === 'temperature') {
-                        this.settings.temperature = value;
-                    } else if (key === 'speed') {
-                        this.settings.speed = value;
-                    } else if (key === 'fanSpeed') {
-                        this.settings.fanSpeed = value;
+                    if (Object.prototype.hasOwnProperty.call(this.settings, key)) {
+                        this.settings[key] = value;
                     }
-                    this.pushLog(`${key} :: ${value}`);
+                    if (key === 'decorations') {
+                        const match = this.decorationOptions.find(opt => opt.value === value);
+                        this.pushLog(`${key} :: ${match ? match.label : value}`);
+                    } else {
+                        this.pushLog(`${key} :: ${value}`);
+                    }
                 },
                 handleNotification(key, event) {
                     const parsed = this.parseValue(event.target.value);
@@ -321,6 +494,13 @@
                         console.error(err);
                         this.setStatus('write error');
                     }
+                },
+                async sendFeed() {
+                    if (!this.connected || !this.settings.feed) {
+                        return;
+                    }
+                    await this.updateSetting('feed');
+                    this.settings.feed = 0;
                 },
                 async disconnect() {
                     if (this.device && this.device.gatt.connected) {
