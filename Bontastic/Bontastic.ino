@@ -9,6 +9,11 @@
 #include "src/printer/PrintHelpers.h"
 #include "src/printer/PrinterControl.h"
 
+#include <map>
+#include <string>
+
+std::map<uint32_t, std::string> nodeNames;
+
 const char *localDeviceName = "Bontastic Printer";
 
 const char *targetService = "6ba1b218-15a8-461f-9fa8-5dcae273eafd";
@@ -62,7 +67,18 @@ void decodeFromRadioPacket(const std::string &packet)
       if (d.payload.size > 0)
       {
         Serial.print("TEXT: ");
-        printTextMessage(d.payload.bytes, d.payload.size);
+        std::string senderName = "Unknown";
+        if (nodeNames.count(msg.packet.from))
+        {
+          senderName = nodeNames[msg.packet.from];
+        }
+        else
+        {
+          char buf[16];
+          snprintf(buf, sizeof(buf), "!%08x", msg.packet.from);
+          senderName = buf;
+        }
+        printTextMessage(d.payload.bytes, d.payload.size, senderName.c_str(), msg.packet.rx_time);
       }
       break;
 
@@ -83,11 +99,12 @@ void decodeFromRadioPacket(const std::string &packet)
 
     case meshtastic_PortNum_NODEINFO_APP:
     {
-      meshtastic_NodeInfo node = meshtastic_NodeInfo_init_zero;
+      meshtastic_User user = meshtastic_User_init_zero;
       pb_istream_t ns = pb_istream_from_buffer(d.payload.bytes, d.payload.size);
-      if (pb_decode(&ns, meshtastic_NodeInfo_fields, &node))
+      if (pb_decode(&ns, meshtastic_User_fields, &user))
       {
-        printNodeInfo(node.num, node.user.long_name);
+        printNodeInfo(msg.packet.from, user.long_name);
+        nodeNames[msg.packet.from] = user.long_name;
       }
       else
       {

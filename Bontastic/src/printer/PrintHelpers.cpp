@@ -1,6 +1,7 @@
 #include "PrintHelpers.h"
 #include "Adafruit_Thermal.h"
 #include "PrinterControl.h"
+#include <time.h>
 
 Adafruit_Thermal printer(&Serial2);
 
@@ -67,13 +68,28 @@ std::string utf8ToIso88591(const std::string &utf8)
     return iso;
 }
 
-void printTextMessage(const uint8_t *data, size_t size)
+void printTextMessage(const uint8_t *data, size_t size, const char *sender, uint32_t timestamp)
 {
     Serial.write(data, size);
     Serial.println();
+
+    // Format time
+    time_t t = (time_t)timestamp;
+    struct tm *tm = localtime(&t);
+    char timeBuf[32];
+    strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", tm);
+
+    printer.println(F("----------------"));
+    printer.print(F("From: "));
+    printer.println(sender);
+    printer.print(F("Time: "));
+    printer.println(timeBuf);
+    printer.println(F("----------------"));
+
     std::string utf8((const char *)data, size);
     std::string iso = utf8ToIso88591(utf8);
     printer.println(iso.c_str());
+    printer.feed(2);
 }
 
 void printPosition(double lat, double lon, int32_t alt)
