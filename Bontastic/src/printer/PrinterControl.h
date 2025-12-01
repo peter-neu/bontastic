@@ -19,6 +19,8 @@ struct PrinterSettings
     uint8_t codePage;
     char meshName[32];
     char meshPin[16];
+    uint8_t printerRxPin;
+    uint8_t printerTxPin;
 };
 
 void setupPrinterControl();

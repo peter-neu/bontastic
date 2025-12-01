@@ -148,7 +148,6 @@ class ClientCallbacks : public NimBLEClientCallbacks
 void setup()
 {
   Serial.begin(115200);
-  printerSetup();
 
   while (!Serial)
   {
@@ -159,6 +158,7 @@ void setup()
 
   NimBLEDevice::init(localDeviceName);
   setupPrinterControl();
+  printerSetup();
   NimBLEDevice::deleteAllBonds();
   Serial.println("Cleared bonds");
   NimBLEDevice::setMTU(512);

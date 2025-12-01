@@ -1,12 +1,20 @@
 #include "PrintHelpers.h"
 #include "Adafruit_Thermal.h"
+#include "PrinterControl.h"
 
 Adafruit_Thermal printer(&Serial2);
 
+void updatePrinterPins(int rx, int tx)
+{
+    Serial2.end();
+    Serial2.begin(9600, SERIAL_8N1, rx, tx);
+    printer.begin();
+}
+
 void printerSetup()
 {
-    Serial2.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
-    printer.begin();
+    const PrinterSettings &settings = getPrinterSettings();
+    updatePrinterPins(settings.printerRxPin, settings.printerTxPin);
     printer.setDefault(); // Restore printer to defaults
     printer.setLineHeight(30);
     printer.setSize('M'); // Set type size to Medium

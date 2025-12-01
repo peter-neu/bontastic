@@ -27,7 +27,9 @@ static const char *fieldUuids[] = {
     "5a1a000e-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a000f-8f19-4a86-9a9e-7b4f7f9b0002",
     "5a1a0010-8f19-4a86-9a9e-7b4f7f9b0002",
-    "5a1a0011-8f19-4a86-9a9e-7b4f7f9b0002"};
+    "5a1a0011-8f19-4a86-9a9e-7b4f7f9b0002",
+    "5a1a0012-8f19-4a86-9a9e-7b4f7f9b0002",
+    "5a1a0013-8f19-4a86-9a9e-7b4f7f9b0002"};
 
 enum SettingField : uint8_t
 {
@@ -47,6 +49,8 @@ enum SettingField : uint8_t
     PrintText,
     MeshName,
     MeshPin,
+    PrinterRxPin,
+    PrinterTxPin,
     FieldCount
 };
 
@@ -54,7 +58,7 @@ static const uint16_t printerAppearance = 0x03C0;
 
 static NimBLEServer *printerServer;
 static NimBLECharacteristic *characteristics[FieldCount];
-static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0, 2, 23, "MO1_1dfd", "123456"};
+static const PrinterSettings defaultSettings{11, 120, 40, 10, 2, 30, 0, 0, 0, 0, 0, 2, 23, "MO1_1dfd", "123456", 1, 2};
 static PrinterSettings printerSettings = defaultSettings;
 static Preferences printerPrefs;
 static bool prefsReady;
@@ -95,6 +99,10 @@ static const char *fieldLabel(uint8_t field)
         return "MESH_NAME";
     case MeshPin:
         return "MESH_PIN";
+    case PrinterRxPin:
+        return "PRINTER_RX";
+    case PrinterTxPin:
+        return "PRINTER_TX";
     default:
         return nullptr;
     }
@@ -116,7 +124,9 @@ static const char *fieldKeys[] = {
     "codePage",
     nullptr,
     "meshName",
-    "meshPin"};
+    "meshPin",
+    "printerRxPin",
+    "printerTxPin"};
 
 static void *fieldSlot(uint8_t field);
 
@@ -221,6 +231,10 @@ static void *fieldSlot(uint8_t field)
         return printerSettings.meshName;
     case MeshPin:
         return printerSettings.meshPin;
+    case PrinterRxPin:
+        return &printerSettings.printerRxPin;
+    case PrinterTxPin:
+        return &printerSettings.printerTxPin;
     case PrintText:
         return nullptr;
     default:
@@ -258,6 +272,9 @@ static uint16_t clampField(uint8_t field, int value)
         return constrain(value, 0, 15);
     case CodePage:
         return constrain(value, 0, 47);
+    case PrinterRxPin:
+    case PrinterTxPin:
+        return constrain(value, 0, 40);
     case PrintText:
         return 0;
     default:
@@ -424,7 +441,14 @@ static void handleWrite(uint8_t field, const std::string &payload)
     }
     *slot = static_cast<uint8_t>(clamped);
     syncField(field, true);
-    applyPrinterConfig();
+    if (field == PrinterRxPin || field == PrinterTxPin)
+    {
+        updatePrinterPins(printerSettings.printerRxPin, printerSettings.printerTxPin);
+    }
+    else
+    {
+        applyPrinterConfig();
+    }
     persistField(field);
     logField(field, clamped);
 }
